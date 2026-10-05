@@ -1,0 +1,57 @@
+# Dependencies and generated output (all packages)
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+.vite/
+.nyc_output/
+
+# Local configuration and credentials; commit only sanitized examples
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+.aws/
+
+# Personal resumes, uploads, exports, and local databases
+uploads/
+exports/
+resumes/
+resumeforge-backup-*.json
+resumeforge-unreadable-data.json
+*.pdf
+*.doc
+*.docx
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs, temporary files, and editor/OS state
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/
+
+# Personal assistant settings
+.claude/
+.codex/
+.agents/
+
+# Laptop-only reference notes and checklists
+/.local/
