@@ -34,6 +34,9 @@ test("cloud disclosure includes Ollama cloud models and remote endpoints", () =>
   assert.equal(createAI({ AI_PROVIDER: "ollama", OLLAMA_BASE_URL: "https://example.com/v1" }).dataLeavesDevice, true);
   assert.equal(createAI({ AI_PROVIDER: "llamacpp" }).dataLeavesDevice, false);
   assert.equal(createAI({ AI_PROVIDER: "anthropic" }).dataLeavesDevice, true);
+  assert.equal(createAI({ AI_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://ollama:11434/v1" }).dataLeavesDevice, false);
+  assert.equal(createAI({ AI_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://host.docker.internal:11434/v1" }).dataLeavesDevice, false);
+  assert.equal(createAI({ AI_PROVIDER: "ollama", OLLAMA_BASE_URL: "http://ollama:11434/v1", OLLAMA_MODEL: "gpt-oss:120b-cloud" }).dataLeavesDevice, true);
   assert.throws(() => createAI({ AI_PROVIDER: "invalid" }));
 });
 test("missing Anthropic credentials do not prevent manual editing or PDF startup", async () => {

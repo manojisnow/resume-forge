@@ -3,7 +3,12 @@ async function renderPDF(html) {
   const { PRINT_CSS } = await import("../shared/print.mjs");
   let browser;
   try {
-    browser = await puppeteer.launch({ headless: true, timeout: 30000 });
+    browser = await puppeteer.launch({
+      headless: true, timeout: 30000,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      // Explicit opt-in for the restricted local container; native installs retain the sandbox.
+      args: process.env.PDF_DISABLE_SANDBOX === "true" ? ["--no-sandbox", "--disable-setuid-sandbox"] : [],
+    });
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
     await page.setJavaScriptEnabled(false);

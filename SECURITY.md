@@ -1,7 +1,9 @@
 # Security
 
 ResumeForge is intended for use on your own computer. The API binds to
-127.0.0.1 and has no user authentication. Do not expose it or the Vite development
+127.0.0.1 by default and has no user authentication. The Docker image listens
+on all container interfaces, but the supplied Compose runner publishes its port
+only on host 127.0.0.1. Do not expose it or the Vite development
 server to the internet. A hosted edition needs authentication, authorization,
 rate limits, document parsing isolation, and deployment hardening first.
 
@@ -18,7 +20,10 @@ Downloaded backups are unencrypted. Save them somewhere appropriate for private
 documents and do not upload them to issues or commit them to the repository.
 
 PDF export disables page JavaScript and blocks external resource requests. It
-uses Chromium's default sandbox. External images and web fonts are unavailable
+uses Chromium's default sandbox on native installs. The local Compose runner
+explicitly disables that sandbox inside a non-root, read-only container with
+dropped capabilities. Do not expose this local runner as a public service;
+public deployment needs a separately reviewed PDF isolation strategy. External images and web fonts are unavailable
 during export; use inline styles and embedded assets.
 
 ## Reporting vulnerabilities

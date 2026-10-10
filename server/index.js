@@ -9,6 +9,8 @@ const { renderPDF } = require("./pdf.cjs");
 const app = express();
 const resumeSchema = import("../shared/resume.mjs");
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || "127.0.0.1";
+const path = require("node:path");
 
 // AI calls are isolated so each provider can be verified without live requests.
 const { createAI } = require("./ai.cjs");
@@ -16,7 +18,7 @@ const { provider: PROVIDER, config: providerCfg, callAI, dataLeavesDevice } = cr
 
 // ── Multer setup ──────────────────────────────────────────────────────────────
 app.disable("x-powered-by");
-const allowedOrigins = new Set(["http://localhost:3000", "http://127.0.0.1:3000"]);
+const allowedOrigins = new Set((process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://127.0.0.1:3000").split(",").map(origin => origin.trim()).filter(Boolean));
 // CORS alone does not stop a cross-origin browser from sending a request.
 app.use((req, res, next) => {
   if (req.headers.origin && !allowedOrigins.has(req.headers.origin)) {
@@ -247,6 +249,17 @@ app.post("/api/pdf", async (req, res) => {
   }
 });
 
+// Production serves the built frontend from the same origin as the API.
+app.use("/api", (req, res) => res.status(404).json({ error: "Unknown API route." }));
+if (process.env.SERVE_CLIENT === "true") {
+  const clientDir = path.join(__dirname, "../client/dist");
+  if (!require("node:fs").existsSync(path.join(clientDir, "index.html"))) {
+    throw new Error("Build the frontend before enabling SERVE_CLIENT.");
+  }
+  app.use(express.static(clientDir));
+  app.get("*", (req, res) => res.sendFile(path.join(clientDir, "index.html")));
+}
+
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: "Upload rejected. Maximum file size is 10 MB." });
@@ -256,8 +269,8 @@ app.use((err, req, res, next) => {
   res.status(400).json({ error: "Invalid request or unsupported file type." });
 });
 
-if (require.main === module) app.listen(PORT, "127.0.0.1", () => {
-  console.log(`\n✅ ResumeForge server running at http://localhost:${PORT}`);
+if (require.main === module) app.listen(PORT, HOST, () => {
+  console.log(`\n✅ ResumeForge server running at http://${HOST}:${PORT}`);
   console.log(`   AI Provider : ${PROVIDER.toUpperCase()}`);
   console.log(`   Model       : ${providerCfg.model}`);
   if (PROVIDER === "anthropic" && (!providerCfg.apiKey || providerCfg.apiKey === "your_api_key_here")) {
