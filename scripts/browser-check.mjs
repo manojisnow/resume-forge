@@ -11,6 +11,7 @@ import { emptyStore, newResume } from "../client/src/resumeStore.mjs";
 
 // Run against npm start. Chromium uses an isolated profile and synthetic data.
 // Mock AI responses so this verification never calls the user's AI provider.
+const appURL = process.env.RESUMEFORGE_URL || "http://localhost:3000";
 const browser = await puppeteer.launch({ headless: true });
 const page = await browser.newPage();
 const errors = [];
@@ -42,7 +43,7 @@ async function seed(store) {
 }
 const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem("rf_store_v1")));
 try {
-  await page.goto("http://localhost:3000", { waitUntil: "networkidle0" });
+  await page.goto(appURL, { waitUntil: "networkidle0" });
   const base = emptyStore(); base.resumes[0].name = "Original resume";
   base.resumes[0].data.personal.name = "Original Person";
   await seed(base);
@@ -93,7 +94,7 @@ try {
 
   await seed(base);
   const second = await browser.newPage();
-  await second.goto("http://localhost:3000", { waitUntil: "networkidle0" });
+  await second.goto(appURL, { waitUntil: "networkidle0" });
   await second.evaluate(() => {
     const store = JSON.parse(localStorage.getItem("rf_store_v1")); store.resumes[0].data.personal.name = "Another tab";
     localStorage.setItem("rf_store_v1", JSON.stringify(store));
@@ -136,7 +137,7 @@ try {
     const resume = newResume("PDF test", long, { template, accent: "#1a365d", keepEntriesTogether: true, breakBeforeEntry: null });
     await seed({ version: 1, resumes: [resume], activeId: resume.id, trash: [] });
     const html = await page.$eval("#resume-preview", node => { const clone = node.cloneNode(true); clone.dataset.keepEntries = "true"; return clone.outerHTML; });
-    const response = await fetch("http://127.0.0.1:3001/api/pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ html, filename: "synthetic-test" }) });
+    const response = await fetch(`${appURL}/api/pdf`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ html, filename: "synthetic-test" }) });
     assert.equal(response.status, 200, `${template}: PDF request failed`);
     const pdf = await pdfParse(Buffer.from(await response.arrayBuffer()));
     assert.ok(pdf.numpages > 1, `${template}: expected multiple pages`);

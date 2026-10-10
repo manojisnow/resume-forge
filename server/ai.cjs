@@ -10,7 +10,7 @@ function createAI(env = process.env, { fetchImpl = fetch, AnthropicSDK } = {}) {
   const endpoint = new URL(config.baseURL);
   if (!["http:", "https:"].includes(endpoint.protocol)) throw new Error("AI provider URL must use HTTP or HTTPS.");
   const dataLeavesDevice = provider === "anthropic" || /(?:-cloud|:cloud)(?:$|[/:])/i.test(config.model)
-    || !["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname);
+    || !["localhost", "127.0.0.1", "[::1]", "ollama", "host.docker.internal"].includes(endpoint.hostname);
   let client;
   async function callAI(prompt) {
     if (provider === "anthropic") {

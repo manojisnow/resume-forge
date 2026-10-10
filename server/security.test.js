@@ -24,6 +24,12 @@ test("rejects cross-origin requests before AI or PDF work", async () => {
   assert.equal(response.status, 403);
 });
 
+test("unknown API routes return JSON instead of the frontend", async () => {
+  const response = await fetch(`${baseURL}/api/nonexistent`);
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error, "Unknown API route.");
+});
+
 test("permits the local frontend and does not expose configured provider URLs", async () => {
   const response = await fetch(`${baseURL}/api/health`, { headers: { Origin: "http://localhost:3000" } });
   assert.equal(response.status, 200);

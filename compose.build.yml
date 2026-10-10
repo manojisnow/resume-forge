@@ -1,0 +1,5 @@
+# Contributors: docker compose -f compose.yml -f compose.build.yml up --build -d
+services:
+  app:
+    image: resume-forge:local
+    build: .

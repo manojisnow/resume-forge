@@ -4,7 +4,98 @@ Build and edit resumes locally. Import PDF/DOCX files or paste text, review AI
 suggestions, choose from four templates, and download a PDF. Supports Ollama,
 llama.cpp, and Anthropic Claude.
 
-## Requirements
+## Run with Docker
+
+Docker Desktop (or Docker Engine with Compose v2) is the only application runtime
+you need. The image includes the frontend, API, and Chromium for PDF export.
+
+### Build and run now
+
+From a source checkout:
+
+```bash
+docker compose -f compose.yml -f compose.build.yml up --build -d --wait
+```
+
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080). Manual editing and PDF export
+work immediately. AI needs a configured provider. The runner binds only to your
+computer, runs as non-root, and keeps the container filesystem read-only.
+
+### Run a published image
+
+After the first container release is published, download `compose.yml` and
+`.env.example` from the repository
+[Releases page](https://github.com/manojisnow/resume-forge/releases) into a folder.
+No source checkout or npm installation is required. Then run:
+
+```bash
+docker compose up -d --wait
+```
+
+The default image is `ghcr.io/manojisnow/resume-forge:latest`. For a predictable
+version, set `RESUMEFORGE_IMAGE=ghcr.io/manojisnow/resume-forge:1.0.0` in a root
+`.env` file, replacing `1.0.0` with an actually published release tag.
+Images are built for Linux amd64 and arm64, including Docker on Apple Silicon.
+
+### Configure AI in Docker
+
+Copy the root `.env.example` to `.env` next to `compose.yml` (PowerShell:
+`Copy-Item .env.example .env`). This is separate from the native app
+configuration in `server/.env`; neither private file is included in the image.
+
+- **Ollama already on your machine:** pull `llama3.2` and keep Ollama running.
+  The runner connects through `host.docker.internal:11434`. On Linux, Ollama
+  must listen on an interface reachable from Docker; prefer the container
+  option below instead of exposing your host Ollama service.
+- **Anthropic:** set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` in root `.env`.
+  This sends AI inputs to Anthropic.
+- **llama.cpp:** set `AI_PROVIDER=llamacpp`, `LLAMACPP_BASE_URL`, and
+  `LLAMACPP_MODEL`. The default host port is 8081 to avoid the app port.
+
+To run Ollama alongside the app, also download `compose.ollama.yml` and use:
+
+```bash
+docker compose -f compose.yml -f compose.ollama.yml up -d --wait
+```
+
+For a source build, include all three files:
+
+```bash
+docker compose -f compose.yml -f compose.build.yml -f compose.ollama.yml up --build -d --wait
+```
+
+This starts Ollama on an internal Docker network and downloads the selected
+`OLLAMA_MODEL` once. Model weights persist in the `ollama_data` volume. The
+default CPU model needs several GB of free RAM and disk; the first download
+can take several minutes. Cloud-suffixed Ollama models still use cloud inference.
+
+### Stop, update, and preserve saves
+
+Use the same `-f` options you started with for subsequent Compose commands:
+
+```bash
+docker compose logs --tail=100
+docker compose down
+docker compose pull
+docker compose up -d --wait
+```
+
+For source builds, rebuild with `up --build -d --wait` instead of `pull`. After
+editing `.env`, run `up -d` to recreate the app with the new configuration.
+`APP_PORT` changes the local port; use that same address consistently.
+
+Resumes remain in browser localStorage, not in the container or Ollama volume.
+Download a backup from the old app at `localhost:3000`, then restore it in the
+container app at `127.0.0.1:8080`; those addresses have separate browser saves.
+Container upgrades and `down` do not clear browser storage. Do not use `down -v`
+unless you intend to remove the downloaded model volume.
+
+The local runner disables Chromium's internal sandbox to run without granting
+the container privileged capabilities. PDF JavaScript and network requests are
+still blocked; the app container is non-root, capability-restricted, and read-only.
+This runner is for local use and does not add hosted authentication or quotas.
+
+## Requirements (without Docker)
 
 - Node.js 22.12.0 or newer, with npm.
 - An AI provider for importing and rewriting: Ollama, llama.cpp, or an Anthropic
@@ -135,3 +226,21 @@ hosting. See [SECURITY.md](SECURITY.md). Never put API keys in frontend code or
 `VITE_*` variables, which are exposed to the browser.
 
 Licensed under [Apache 2.0](LICENSE). Contributions use the same license.
+
+## Container releases
+
+The tag-triggered workflow tests the app and container, then publishes versioned
+images to GHCR and attaches the runner files to a GitHub release. A maintainer
+creates and pushes a stable `vX.Y.Z` tag on a reviewed commit when ready to release.
+For the first publication, set the GHCR package visibility to Public so users can
+pull without signing in. The workflow uses `GITHUB_TOKEN`; no registry password
+is required. A workflow file alone does not publish an image.
+
+Keep base images and Chromium updated by rebuilding releases regularly.
+To run container checks after a source build:
+
+```bash
+docker compose -f compose.yml -f compose.build.yml exec -T app node < scripts/container-check.cjs
+```
+
+The redirection example uses a POSIX shell; GitHub Actions runs it automatically.
