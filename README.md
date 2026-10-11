@@ -8,6 +8,9 @@ llama.cpp, and Anthropic Claude.
 
 Docker Desktop (or Docker Engine with Compose v2) is the only application runtime
 you need. The image includes the frontend, API, and Chromium for PDF export.
+The production image uses Node.js 24 LTS and Debian 13, with installed OS security
+updates. Package managers are removed after dependency installation; use a source
+build to change dependencies rather than installing into a running container.
 
 ### Build and run now
 

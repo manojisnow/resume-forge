@@ -5,7 +5,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 const require = createRequire(new URL("../server/package.json", import.meta.url));
 const { default: puppeteer } = await import(require.resolve("puppeteer"));
-const pdfParse = require("pdf-parse");
+const { readPDF: pdfParse } = require("../server/read-pdf.cjs");
 import { blankResume, validateResume } from "../shared/resume.mjs";
 import { emptyStore, newResume } from "../client/src/resumeStore.mjs";
 
@@ -99,6 +99,8 @@ try {
     const store = JSON.parse(localStorage.getItem("rf_store_v1")); store.resumes[0].data.personal.name = "Another tab";
     localStorage.setItem("rf_store_v1", JSON.stringify(store));
   });
+  // Make the receiving tab visible before waiting for its rendered warning.
+  await page.bringToFront();
   await page.waitForFunction(() => document.body.textContent.includes("Another tab changed"));
   assert.equal((await saved()).resumes[0].data.personal.name, "Another tab");
   await second.close();
@@ -120,10 +122,8 @@ try {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   assert.ok(pdfFile, "PDF download did not complete");
-  const pageTexts = [];
-  const manualPDF = await pdfParse(await readFile(path.join(backupDirectory, pdfFile)), { pagerender: async pageData => {
-    const content = await pageData.getTextContent(); const text = content.items.map(item => item.str).join(" "); pageTexts.push(text); return text;
-  } });
+  const manualPDF = await pdfParse(await readFile(path.join(backupDirectory, pdfFile)));
+  const pageTexts = manualPDF.pageTexts;
   assert.equal(manualPDF.numpages, 2);
   assert.ok(pageTexts[0].includes("First unique achievement"));
   assert.ok(!pageTexts[0].includes("Second unique achievement"));
