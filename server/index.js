@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const mammoth = require("mammoth");
-const pdfParse = require("pdf-parse");
+const { readPDF } = require("./read-pdf.cjs");
 const { renderPDF } = require("./pdf.cjs");
 
 const app = express();
@@ -31,7 +31,7 @@ app.use(express.json({ limit: "1mb" }));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
   fileFilter: (req, file, cb) => {
     const allowed = [
       "application/pdf",
@@ -111,7 +111,7 @@ app.post("/api/parse/file", upload.single("file"), async (req, res) => {
     const isDOCX = req.file.mimetype.includes("wordprocessingml") || req.file.originalname.endsWith(".docx");
 
     if (isPDF) {
-      const data = await pdfParse(req.file.buffer);
+      const data = await readPDF(req.file.buffer);
       extractedText = data.text;
     } else if (isDOCX) {
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
@@ -262,7 +262,11 @@ if (process.env.SERVE_CLIENT === "true") {
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: "Upload rejected. Maximum file size is 10 MB." });
+    return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({
+      error: err.code === "LIMIT_FILE_SIZE"
+        ? "Upload rejected. Maximum file size is 10 MB."
+        : "Upload rejected. Send exactly one PDF or DOCX file and no extra fields.",
+    });
   }
   if (err.type === "entity.too.large") return res.status(413).json({ error: "Request exceeds the 1 MB limit." });
   if (err instanceof SyntaxError && err.status === 400) return res.status(400).json({ error: "Invalid JSON." });

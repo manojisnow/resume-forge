@@ -2,13 +2,14 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const http = require("node:http");
-const pdfParse = require("./server/node_modules/pdf-parse");
+const { readPDF: pdfParse } = require("./server/read-pdf.cjs");
 
 (async () => {
   assert.notEqual(process.getuid(), 0, "Container must run as non-root");
   for (const file of ["server/.env", ".env", ".local", ".git"]) {
     assert.equal(fs.existsSync(file), false, `${file} must not enter the image`);
   }
+  assert.equal(fs.existsSync("/usr/local/lib/node_modules/npm"), false, "Runtime does not need npm");
   const base = `http://127.0.0.1:${process.env.PORT || 8080}`;
   const frontend = await fetch(base);
   assert.equal(frontend.status, 200);
