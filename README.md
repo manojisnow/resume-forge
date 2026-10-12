@@ -7,10 +7,13 @@ llama.cpp, and Anthropic Claude.
 ## Run with Docker
 
 Docker Desktop (or Docker Engine with Compose v2) is the only application runtime
-you need. The image includes the frontend, API, and Chromium for PDF export.
+you need. The image includes the frontend, API, and Stable Chrome for Testing for PDF export.
 The production image uses Node.js 24 LTS and Debian 13, with installed OS security
 updates. Package managers are removed after dependency installation; use a source
 build to change dependencies rather than installing into a running container.
+The browser version and archive checksums are pinned in `scripts/chrome.json` for
+both architectures. A weekly GitHub check flags new Stable releases; browser
+updates require refreshed checksums, rebuilt images, and PDF verification.
 
 ### Build and run now
 
