@@ -1,5 +1,5 @@
 # Official Stable Chrome for Testing supports amd64 and arm64.
-FROM node:24-trixie-slim AS frontend
+FROM node:26-trixie-slim AS frontend
 WORKDIR /build
 COPY client/package*.json ./client/
 RUN npm ci --prefix client
@@ -7,14 +7,14 @@ COPY client/ ./client/
 COPY shared/ ./shared/
 RUN npm run build --prefix client
 
-FROM node:24-trixie-slim AS browser
+FROM node:26-trixie-slim AS browser
 ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates unzip \
     && rm -rf /var/lib/apt/lists/*
 COPY scripts/chrome.json scripts/install-chrome.cjs /build/
 RUN TARGETARCH=$TARGETARCH node /build/install-chrome.cjs
 
-FROM node:24-trixie-slim AS runtime
+FROM node:26-trixie-slim AS runtime
 ENV NODE_ENV=production PUPPETEER_SKIP_DOWNLOAD=true
 RUN apt-get update \
     && apt-get upgrade -y \
