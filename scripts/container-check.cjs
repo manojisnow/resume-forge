@@ -2,6 +2,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const http = require("node:http");
+const { execFileSync } = require("node:child_process");
 const { readPDF: pdfParse } = require("./server/read-pdf.cjs");
 
 (async () => {
@@ -10,6 +11,10 @@ const { readPDF: pdfParse } = require("./server/read-pdf.cjs");
     assert.equal(fs.existsSync(file), false, `${file} must not enter the image`);
   }
   assert.equal(fs.existsSync("/usr/local/lib/node_modules/npm"), false, "Runtime does not need npm");
+  const browserPin = JSON.parse(fs.readFileSync("/opt/chrome/version.json", "utf8"));
+  const browserVersion = execFileSync(process.env.PUPPETEER_EXECUTABLE_PATH, ["--version"], { encoding: "utf8" });
+  assert.ok(browserVersion.includes(browserPin.version), "Image must use the pinned Stable browser");
+  assert.equal(fs.existsSync("/usr/bin/chromium"), false, "Debian Chromium must not remain in the image");
   const base = `http://127.0.0.1:${process.env.PORT || 8080}`;
   const frontend = await fetch(base);
   assert.equal(frontend.status, 200);
